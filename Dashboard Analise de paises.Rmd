@@ -1,0 +1,127 @@
+---
+title: "Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    theme: spacelab
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(gapminder)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+names(gapminder)<- c("Pais", "Continente", "Ano", "Expectativa_de_vida", "Populacao","PIB")
+```
+
+Análise por País
+========
+
+Inputs {.sidebar}
+-----------------------------------------------------------------------
+```{r}
+selectInput("Pais", label = "Pais:", 
+            choices = unique(gapminder$Pais), selected = "Brazil")
+
+sliderInput("Ano", label = "Periodo:",
+            min = 1975 , max = 2007, value =2007, step = 5)
+
+```
+
+Row {data-height=350}
+-----------------------------------------------------------------------
+
+### Expectativa de vida
+
+```{r}
+renderPlotly({
+  g=filter(gapminder, Pais == input$Pais, Ano <= input$Ano)%>%
+    ggplot(., aes(x=Ano, y= Expectativa_de_vida))+geom_line(color = "blue4")+
+    theme_bw()+labs(y="Anos")
+  ggplotly(g)
+  
+})
+```
+
+### PIB per capita
+
+```{r}
+renderPlotly({
+  g=filter(gapminder, Pais == input$Pais, Ano <= input$Ano)%>%
+    ggplot(., aes(x=Ano, y= PIB))+geom_line(color = "green4")+
+    theme_bw()+labs(y="US$")
+  ggplotly(g)
+  
+})
+```
+
+Row {.tabset}
+---------
+
+### População em milhões de habitantes
+```{r}
+renderPlotly({
+  g=filter(gapminder, Pais == input$Pais, Ano <= input$Ano)%>%
+    ggplot(., aes(x=Ano, y= Populacao/1000000))+geom_col(fill="purple4", color = "black")+
+    theme_bw()+labs(y="Anos")
+  ggplotly(g)
+  
+})
+
+```
+
+
+### Dados do País
+```{r}
+renderTable({
+  filter(gapminder, Pais == input$Pais)
+})
+```
+
+Análise por continente
+==================
+Row {data-height=350}
+-------
+
+### População Total dos Países que compõem o continente (Em milhões de habitantes)
+```{r}
+g=gapminder%>%
+  group_by(Ano, Continente)%>%
+  summarise(POP_total = sum(Populacao)/1000000)%>%
+  ggplot(., aes(x= Ano, y= POP_total, fill= Continente))+ geom_col(position ="dodge", color="black")+
+  theme_bw()+
+  scale_x_continuous("Ano", labels = as.character(unique(gapminder$Ano)), breaks= unique(gapminder$Ano)) +labs(y=" ")
+ggplotly(g)
+```
+
+Row
+-----
+
+### PIB Médio dos Países que compõem o Contienente 
+```{r}
+g=gapminder%>%
+  group_by(Ano, Continente)%>%
+  summarise(PIB_medio= mean(PIB))%>%
+  ggplot(., aes(x= Ano, y= PIB_medio, fill= Continente))+ geom_col(position ="dodge")+
+  theme_bw()+
+  
+  scale_x_continuous("Ano", labels = as.character(unique(gapminder$Ano)), breaks= unique(gapminder$Ano)) +labs(y="US$")
+
+ggplotly(g)
+```
+
+### Média de Expectativa de vida dos paises que compõem o continente
+```{r}
+g=gapminder%>%
+  group_by(Ano, Continente)%>%
+  summarise(Vida_media= mean(Expectativa_de_vida))%>%
+  ggplot(., aes(x= Ano, y= Vida_media, color= Continente))+ geom_line()+
+  theme_bw()+
+  scale_x_continuous("Ano", labels = as.character(unique(gapminder$Ano)), breaks= unique(gapminder$Ano)) +labs(y="Anos")
+
+ggplotly(g)
+```
+
